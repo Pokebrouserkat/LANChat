@@ -17,6 +17,8 @@ struct MessageInputView: View {
                 .background(Color(.systemGray6))
                 #endif
                 .clipShape(RoundedRectangle(cornerRadius: 20))
+                .onSubmit(sendMessage)
+                .submitLabel(.send)
 
             // Send button
             Button(action: sendMessage) {
