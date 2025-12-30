@@ -6,6 +6,7 @@ import UIKit
 struct RoomSelectionView: View {
     @Environment(MultipeerService.self) private var multipeerService
     let onRoomSelected: (ChatRoom) -> Void
+    @Binding var showSettings: Bool
 
     private let columns = [
         GridItem(.flexible()),
@@ -14,7 +15,20 @@ struct RoomSelectionView: View {
 
     var body: some View {
         ZStack {
-            // Dynamic gradient background
+            // Dynamic gradient background - translucent on macOS/Mac Catalyst for window transparency
+            #if os(macOS) || targetEnvironment(macCatalyst)
+            LinearGradient(
+                colors: [
+                    Color.blue.opacity(0.15),
+                    Color.purple.opacity(0.1),
+                    Color.pink.opacity(0.08)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .background(.ultraThinMaterial)
+            .ignoresSafeArea()
+            #else
             LinearGradient(
                 colors: [
                     Color.blue.opacity(0.3),
@@ -25,6 +39,7 @@ struct RoomSelectionView: View {
                 endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
+            #endif
 
             VStack(spacing: 0) {
                 // Glass Header
@@ -104,7 +119,11 @@ struct RoomSelectionView: View {
     }
 
     private func openSettings() {
-        #if canImport(UIKit)
+        #if os(macOS)
+        showSettings = true
+        #elseif targetEnvironment(macCatalyst)
+        showSettings = true
+        #elseif canImport(UIKit)
         if let url = URL(string: UIApplication.openSettingsURLString) {
             UIApplication.shared.open(url)
         }
@@ -204,6 +223,6 @@ struct RoomButton: View {
 }
 
 #Preview {
-    RoomSelectionView(onRoomSelected: { _ in })
+    RoomSelectionView(onRoomSelected: { _ in }, showSettings: .constant(false))
         .environment(MultipeerService())
 }

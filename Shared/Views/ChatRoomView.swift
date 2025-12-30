@@ -15,7 +15,20 @@ struct ChatRoomView: View {
 
     var body: some View {
         ZStack {
-            // Subtle gradient background
+            // Subtle gradient background - translucent on macOS/Mac Catalyst for window transparency
+            #if os(macOS) || targetEnvironment(macCatalyst)
+            LinearGradient(
+                colors: [
+                    Color.blue.opacity(0.04),
+                    Color.purple.opacity(0.02),
+                    Color.clear
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .background(.ultraThinMaterial)
+            .ignoresSafeArea()
+            #else
             LinearGradient(
                 colors: [
                     Color.blue.opacity(0.08),
@@ -26,6 +39,7 @@ struct ChatRoomView: View {
                 endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
+            #endif
 
             VStack(spacing: 0) {
                 // Glass Header

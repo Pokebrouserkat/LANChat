@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @Environment(MultipeerService.self) private var multipeerService
     @State private var selectedRoom: ChatRoom?
+    @Binding var showSettings: Bool
 
     var body: some View {
         NavigationStack {
@@ -12,13 +13,16 @@ struct ContentView: View {
                 RoomSelectionView(onRoomSelected: { room in
                     selectedRoom = room
                     multipeerService.joinRoom(room)
-                })
+                }, showSettings: $showSettings)
             }
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
         }
     }
 }
 
 #Preview {
-    ContentView()
+    ContentView(showSettings: .constant(false))
         .environment(MultipeerService())
 }

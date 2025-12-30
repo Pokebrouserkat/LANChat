@@ -34,105 +34,28 @@
 			<key>Type</key>
 			<string>PSGroupSpecifier</string>
 			<key>Title</key>
-			<string>Delete Messages</string>
+			<string>Delete Messages by Room</string>
 			<key>FooterText</key>
-			<string>Messages are only deleted from your device. Anyone else who received them will still have their copies.</string>
-		</dict>
-		<dict>
-			<key>Type</key>
-			<string>PSToggleSwitchSpecifier</string>
-			<key>Title</key>
-			<string>Delete All Messages</string>
-			<key>Key</key>
-			<string>LocalChat.deleteAllMessages</string>
-			<key>DefaultValue</key>
-			<false/>
+			<string>[╭─╮](localchat://delete-room/A)　[╭─╮](localchat://delete-room/B)
+[ │  A  │](localchat://delete-room/A)　 [ │  B  │](localchat://delete-room/B)
+[╰─╯](localchat://delete-room/A)　[╰─╯](localchat://delete-room/B)
+[╭─╮](localchat://delete-room/C)　[╭─╮](localchat://delete-room/D)
+[ │  C  │](localchat://delete-room/C)　 [ │  D  │](localchat://delete-room/D)
+[╰─╯](localchat://delete-room/C)　[╰─╯](localchat://delete-room/D)
+[╭─╮](localchat://delete-room/E)　[╭─╮](localchat://delete-room/F)
+[ │  E  │](localchat://delete-room/E)　 [ │  F  │](localchat://delete-room/F)
+[╰─╯](localchat://delete-room/E)　[╰─╯](localchat://delete-room/F)
+[╭─╮](localchat://delete-room/G)　[╭─╮](localchat://delete-room/H)
+[ │  G  │](localchat://delete-room/G)　 [ │ H  │](localchat://delete-room/H)
+[╰─╯](localchat://delete-room/G)　[╰─╯](localchat://delete-room/H)</string>
 		</dict>
 		<dict>
 			<key>Type</key>
 			<string>PSGroupSpecifier</string>
-			<key>Title</key>
-			<string>Delete Messages by Room</string>
-		</dict>
-		<dict>
-			<key>Type</key>
-			<string>PSToggleSwitchSpecifier</string>
-			<key>Title</key>
-			<string>Room A</string>
-			<key>Key</key>
-			<string>LocalChat.deleteRoom.A</string>
-			<key>DefaultValue</key>
-			<false/>
-		</dict>
-		<dict>
-			<key>Type</key>
-			<string>PSToggleSwitchSpecifier</string>
-			<key>Title</key>
-			<string>Room B</string>
-			<key>Key</key>
-			<string>LocalChat.deleteRoom.B</string>
-			<key>DefaultValue</key>
-			<false/>
-		</dict>
-		<dict>
-			<key>Type</key>
-			<string>PSToggleSwitchSpecifier</string>
-			<key>Title</key>
-			<string>Room C</string>
-			<key>Key</key>
-			<string>LocalChat.deleteRoom.C</string>
-			<key>DefaultValue</key>
-			<false/>
-		</dict>
-		<dict>
-			<key>Type</key>
-			<string>PSToggleSwitchSpecifier</string>
-			<key>Title</key>
-			<string>Room D</string>
-			<key>Key</key>
-			<string>LocalChat.deleteRoom.D</string>
-			<key>DefaultValue</key>
-			<false/>
-		</dict>
-		<dict>
-			<key>Type</key>
-			<string>PSToggleSwitchSpecifier</string>
-			<key>Title</key>
-			<string>Room E</string>
-			<key>Key</key>
-			<string>LocalChat.deleteRoom.E</string>
-			<key>DefaultValue</key>
-			<false/>
-		</dict>
-		<dict>
-			<key>Type</key>
-			<string>PSToggleSwitchSpecifier</string>
-			<key>Title</key>
-			<string>Room F</string>
-			<key>Key</key>
-			<string>LocalChat.deleteRoom.F</string>
-			<key>DefaultValue</key>
-			<false/>
-		</dict>
-		<dict>
-			<key>Type</key>
-			<string>PSToggleSwitchSpecifier</string>
-			<key>Title</key>
-			<string>Room G</string>
-			<key>Key</key>
-			<string>LocalChat.deleteRoom.G</string>
-			<key>DefaultValue</key>
-			<false/>
-		</dict>
-		<dict>
-			<key>Type</key>
-			<string>PSToggleSwitchSpecifier</string>
-			<key>Title</key>
-			<string>Room H</string>
-			<key>Key</key>
-			<string>LocalChat.deleteRoom.H</string>
-			<key>DefaultValue</key>
-			<false/>
+			<key>FooterText</key>
+			<string>[Delete All Messages](localchat://delete-all)
+
+Messages are only deleted from your device.</string>
 		</dict>
 	</array>
 </dict>

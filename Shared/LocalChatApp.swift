@@ -6,7 +6,14 @@ struct LocalChatApp: App {
     let modelContainer: ModelContainer
 
     @State private var multipeerService = MultipeerService()
-    @Environment(\.scenePhase) private var scenePhase
+    @State private var pendingDeleteAction: DeleteAction?
+    @State private var showDeleteConfirmation = false
+    @State private var showSettings = false
+
+    enum DeleteAction {
+        case all
+        case room(ChatRoom)
+    }
 
     init() {
         do {
@@ -18,39 +25,90 @@ struct LocalChatApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(showSettings: $showSettings)
                 .environment(multipeerService)
-                .onChange(of: scenePhase) { _, newPhase in
-                    if newPhase == .active {
-                        processDeleteSettings()
-                    }
+                .onOpenURL { url in
+                    handleURL(url)
                 }
+                .alert("Delete Messages", isPresented: $showDeleteConfirmation) {
+                    Button("Delete", role: .destructive) {
+                        if let action = pendingDeleteAction {
+                            performDelete(action)
+                        }
+                        openSettings()
+                    }
+                    Button("Cancel", role: .cancel) {
+                        openSettings()
+                    }
+                } message: {
+                    Text(deleteConfirmationMessage)
+                }
+                #if os(macOS)
+                .containerBackground(.clear, for: .window)
+                #elseif targetEnvironment(macCatalyst)
+                .transparentWindow()
+                #endif
         }
         .modelContainer(modelContainer)
+        .commands {
+            CommandGroup(replacing: .appSettings) {
+                Button("Settings...") {
+                    showSettings = true
+                }
+                .keyboardShortcut(",", modifiers: .command)
+            }
+        }
         #if os(macOS)
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 400, height: 600)
         #endif
     }
 
-    @MainActor
-    private func processDeleteSettings() {
-        let defaults = UserDefaults.standard
-
-        // Check if delete all is requested
-        if defaults.bool(forKey: "LocalChat.deleteAllMessages") {
-            deleteAllMessages()
-            defaults.set(false, forKey: "LocalChat.deleteAllMessages")
+    private var deleteConfirmationMessage: String {
+        switch pendingDeleteAction {
+        case .all:
+            return "Are you sure you want to delete all messages? This cannot be undone."
+        case .room(let room):
+            return "Are you sure you want to delete all messages in Room \(room.rawValue)? This cannot be undone."
+        case nil:
+            return ""
         }
+    }
 
-        // Check individual room deletions
-        for room in ChatRoom.allCases {
-            let key = "LocalChat.deleteRoom.\(room.rawValue)"
-            if defaults.bool(forKey: key) {
-                deleteMessages(for: room)
-                defaults.set(false, forKey: key)
+    private func handleURL(_ url: URL) {
+        guard url.scheme == "localchat" else { return }
+
+        switch url.host {
+        case "delete-all":
+            pendingDeleteAction = .all
+            showDeleteConfirmation = true
+        case "delete-room":
+            if let roomID = url.pathComponents.dropFirst().first,
+               let room = ChatRoom(rawValue: roomID) {
+                pendingDeleteAction = .room(room)
+                showDeleteConfirmation = true
             }
+        default:
+            break
         }
+    }
+
+    @MainActor
+    private func performDelete(_ action: DeleteAction) {
+        switch action {
+        case .all:
+            deleteAllMessages()
+        case .room(let room):
+            deleteMessages(for: room)
+        }
+    }
+
+    private func openSettings() {
+        #if os(iOS)
+        if let url = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(url)
+        }
+        #endif
     }
 
     @MainActor
@@ -88,6 +146,169 @@ struct LocalChatApp: App {
         }
     }
 }
+
+// MARK: - Transparent Window Support
+#if os(macOS)
+import AppKit
+
+struct TransparentWindowModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .background(TransparentWindowAccessor())
+    }
+}
+
+class TransparentNSView: NSView {
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        configureWindow()
+    }
+
+    override func layout() {
+        super.layout()
+        configureWindow()
+    }
+
+    private func configureWindow() {
+        guard let window = self.window else { return }
+        window.isOpaque = false
+        window.backgroundColor = .clear
+        window.titlebarAppearsTransparent = true
+        window.styleMask.insert(.fullSizeContentView)
+        window.hasShadow = true
+    }
+}
+
+struct TransparentWindowAccessor: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        return TransparentNSView()
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {}
+}
+
+extension View {
+    func transparentWindow() -> some View {
+        modifier(TransparentWindowModifier())
+    }
+}
+#elseif targetEnvironment(macCatalyst)
+import UIKit
+
+struct TransparentWindowModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .background(TransparentWindowAccessor())
+            .onAppear {
+                // Apply transparency after a short delay to ensure window is ready
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    applyTransparencyToAllWindows()
+                }
+            }
+    }
+}
+
+struct TransparentWindowAccessor: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let view = TransparentHostingView()
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {}
+}
+
+private func applyTransparencyToAllWindows() {
+    for scene in UIApplication.shared.connectedScenes {
+        guard let windowScene = scene as? UIWindowScene else { continue }
+
+        // Configure titlebar
+        if let titlebar = windowScene.titlebar {
+            titlebar.titleVisibility = .hidden
+            titlebar.toolbar = nil
+        }
+
+        for window in windowScene.windows {
+            window.backgroundColor = .clear
+            window.isOpaque = false
+            window.rootViewController?.view.backgroundColor = .clear
+
+            // Try to access NSWindow
+            configureNSWindowForUIWindow(window)
+        }
+    }
+}
+
+private func configureNSWindowForUIWindow(_ window: UIWindow) {
+    // Try to get the hosting window using private API
+    // The selector name varies by macOS version
+    let selectors = ["_bridgedWindow", "nsWindow", "_nsWindow"]
+
+    for selectorName in selectors {
+        let selector = NSSelectorFromString(selectorName)
+        if window.responds(to: selector),
+           let result = window.perform(selector),
+           let nsWindow = result.takeUnretainedValue() as AnyObject? {
+            applyTransparencyToNSWindow(nsWindow)
+            return
+        }
+    }
+
+    // Try via windowScene
+    if let windowScene = window.windowScene {
+        for selectorName in selectors {
+            let selector = NSSelectorFromString(selectorName)
+            if windowScene.responds(to: selector),
+               let result = windowScene.perform(selector),
+               let nsWindow = result.takeUnretainedValue() as AnyObject? {
+                applyTransparencyToNSWindow(nsWindow)
+                return
+            }
+        }
+    }
+}
+
+private func applyTransparencyToNSWindow(_ nsWindow: AnyObject) {
+    // Get NSColor.clearColor using perform selector
+    guard let nsColorClass = NSClassFromString("NSColor") as? NSObject.Type,
+          let clearColorResult = nsColorClass.perform(NSSelectorFromString("clearColor")),
+          let clearColor = clearColorResult.takeUnretainedValue() as AnyObject? else {
+        return
+    }
+
+    // setOpaque:NO - pass NSNumber(false) for BOOL parameter
+    let setOpaqueSelector = NSSelectorFromString("setOpaque:")
+    if nsWindow.responds(to: setOpaqueSelector) {
+        _ = nsWindow.perform(setOpaqueSelector, with: NSNumber(value: false))
+    }
+
+    // setBackgroundColor:clearColor
+    let setBackgroundColorSelector = NSSelectorFromString("setBackgroundColor:")
+    if nsWindow.responds(to: setBackgroundColorSelector) {
+        _ = nsWindow.perform(setBackgroundColorSelector, with: clearColor)
+    }
+}
+
+class TransparentHostingView: UIView {
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        guard let window = self.window else { return }
+        window.backgroundColor = .clear
+        window.isOpaque = false
+        window.rootViewController?.view.backgroundColor = .clear
+
+        // Try to configure after a delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            applyTransparencyToAllWindows()
+        }
+    }
+}
+
+extension View {
+    func transparentWindow() -> some View {
+        modifier(TransparentWindowModifier())
+    }
+}
+#endif
 
 // MARK: - Glass Design System for iOS 26 / macOS 26
 extension View {
