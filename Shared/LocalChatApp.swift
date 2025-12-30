@@ -9,6 +9,7 @@ struct LocalChatApp: App {
     @State private var pendingDeleteAction: DeleteAction?
     @State private var showDeleteConfirmation = false
     @State private var showSettings = false
+    @State private var pendingRoomToOpen: ChatRoom?
 
     enum DeleteAction {
         case all
@@ -25,7 +26,7 @@ struct LocalChatApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView(showSettings: $showSettings)
+            ContentView(showSettings: $showSettings, pendingRoomToOpen: $pendingRoomToOpen)
                 .environment(multipeerService)
                 .onOpenURL { url in
                     handleURL(url)
@@ -85,11 +86,20 @@ struct LocalChatApp: App {
         case "delete-room":
             if let roomID = url.pathComponents.dropFirst().first,
                let room = ChatRoom(rawValue: roomID) {
+                // Navigate to the room first so user can see it behind the confirmation
+                pendingRoomToOpen = room
                 pendingDeleteAction = .room(room)
-                showDeleteConfirmation = true
+                // Show confirmation after a brief delay to allow navigation
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    showDeleteConfirmation = true
+                }
             }
         default:
-            break
+            // Handle localchat://a, localchat://b, etc. to open rooms
+            if let host = url.host,
+               let room = ChatRoom(rawValue: host.uppercased()) {
+                pendingRoomToOpen = room
+            }
         }
     }
 
