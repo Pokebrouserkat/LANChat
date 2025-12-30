@@ -86,7 +86,7 @@ struct MessageBubbleView: View {
                         // Received message: glass material bubble
                         ZStack {
                             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                .fill(.ultraThinMaterial)
+                                .fill(.regularMaterial)
                             RoundedRectangle(cornerRadius: 20, style: .continuous)
                                 .strokeBorder(.white.opacity(0.2), lineWidth: 0.5)
                         }
