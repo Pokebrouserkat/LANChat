@@ -27,3 +27,33 @@ struct LocalChatApp: App {
         #endif
     }
 }
+
+// MARK: - Glass Design System for iOS 26 / macOS 26
+extension View {
+    func glassBackground(cornerRadius: CGFloat = 20) -> some View {
+        self
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+    }
+
+    func glassCard(cornerRadius: CGFloat = 24) -> some View {
+        self
+            .background {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(.ultraThinMaterial)
+                    .shadow(color: .black.opacity(0.08), radius: 8, y: 4)
+            }
+    }
+
+    func floatingGlass(cornerRadius: CGFloat = 28) -> some View {
+        self
+            .background {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(.thinMaterial)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                            .strokeBorder(.white.opacity(0.2), lineWidth: 0.5)
+                    }
+                    .shadow(color: .black.opacity(0.1), radius: 10, y: 5)
+            }
+    }
+}

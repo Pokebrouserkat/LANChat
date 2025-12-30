@@ -2,11 +2,12 @@ import SwiftUI
 
 struct MessageBubbleView: View {
     let message: Message
+    var roomColor: Color = .blue
 
     var body: some View {
         HStack {
             if message.isFromCurrentUser {
-                Spacer(minLength: 60)
+                Spacer(minLength: 50)
             }
 
             VStack(alignment: message.isFromCurrentUser ? .trailing : .leading, spacing: 4) {
@@ -16,20 +17,21 @@ struct MessageBubbleView: View {
                         .font(.caption)
                         .fontWeight(.semibold)
                         .foregroundStyle(.secondary)
+                        .padding(.leading, 4)
                 }
 
                 // Message content
                 VStack(alignment: .leading, spacing: 8) {
                     // Drawing placeholder (if any)
                     if message.drawingData != nil {
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.2))
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(.ultraThinMaterial)
                             .frame(height: 120)
                             .overlay {
-                                Image(systemName: "scribble")
+                                Image(systemName: "scribble.variable")
+                                    .font(.title2)
                                     .foregroundStyle(.secondary)
                             }
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
 
                     // Text
@@ -38,44 +40,91 @@ struct MessageBubbleView: View {
                             .foregroundStyle(message.isFromCurrentUser ? .white : .primary)
                     }
                 }
-                .padding(12)
-                #if os(macOS)
-                .background(message.isFromCurrentUser ? Color.blue : Color(nsColor: .controlBackgroundColor))
-                #else
-                .background(message.isFromCurrentUser ? Color.blue : Color(.systemGray5))
-                #endif
-                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background {
+                    if message.isFromCurrentUser {
+                        // Sent message: colored glass bubble
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [roomColor, roomColor.opacity(0.85)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                .fill(.white.opacity(0.1))
+                            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                .strokeBorder(
+                                    LinearGradient(
+                                        colors: [.white.opacity(0.4), .white.opacity(0.1)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 0.5
+                                )
+                        }
+                        .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
+                    } else {
+                        // Received message: glass material bubble
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                .fill(.ultraThinMaterial)
+                            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                .strokeBorder(.white.opacity(0.2), lineWidth: 0.5)
+                        }
+                        .shadow(color: .black.opacity(0.05), radius: 4, y: 2)
+                    }
+                }
 
                 // Timestamp
                 Text(message.timestamp, style: .time)
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
+                    .padding(.horizontal, 4)
             }
 
             if !message.isFromCurrentUser {
-                Spacer(minLength: 60)
+                Spacer(minLength: 50)
             }
         }
     }
 }
 
 #Preview {
-    VStack {
-        MessageBubbleView(message: Message(
-            senderID: "1",
-            senderName: "Alice",
-            roomID: "A",
-            text: "Hello there!",
-            isFromCurrentUser: false
-        ))
+    ZStack {
+        LinearGradient(
+            colors: [Color.blue.opacity(0.1), Color.purple.opacity(0.05)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        .ignoresSafeArea()
 
-        MessageBubbleView(message: Message(
-            senderID: "2",
-            senderName: "Me",
-            roomID: "A",
-            text: "Hey! How are you?",
-            isFromCurrentUser: true
-        ))
+        VStack(spacing: 16) {
+            MessageBubbleView(
+                message: Message(
+                    senderID: "1",
+                    senderName: "Alice",
+                    roomID: "A",
+                    text: "Hello there!",
+                    isFromCurrentUser: false
+                ),
+                roomColor: Color(red: 0.2, green: 0.5, blue: 1.0)
+            )
+
+            MessageBubbleView(
+                message: Message(
+                    senderID: "2",
+                    senderName: "Me",
+                    roomID: "A",
+                    text: "Hey! How are you?",
+                    isFromCurrentUser: true
+                ),
+                roomColor: Color(red: 0.2, green: 0.5, blue: 1.0)
+            )
+        }
+        .padding()
     }
-    .padding()
 }

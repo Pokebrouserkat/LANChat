@@ -12,42 +12,55 @@ struct ChatRoomView: View {
     @State private var showingUserList = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            chatHeader
+        ZStack {
+            // Subtle gradient background
+            LinearGradient(
+                colors: [
+                    Color.blue.opacity(0.08),
+                    Color.purple.opacity(0.05),
+                    Color.clear
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
 
-            Divider()
+            VStack(spacing: 0) {
+                // Glass Header
+                chatHeader
+                    .background(.ultraThinMaterial)
 
-            // Messages
-            ScrollViewReader { proxy in
-                ScrollView {
-                    LazyVStack(spacing: 12) {
-                        if let store = messageStore {
-                            ForEach(store.messages) { message in
-                                MessageBubbleView(message: message)
-                                    .id(message.id)
+                // Messages
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            if let store = messageStore {
+                                ForEach(store.messages) { message in
+                                    MessageBubbleView(message: message, roomColor: roomColor)
+                                        .id(message.id)
+                                }
                             }
                         }
+                        .padding()
+                        .padding(.bottom, 20)
                     }
-                    .padding()
+                    #if os(iOS)
+                    .scrollDismissesKeyboard(.interactively)
+                    #endif
+                    .onAppear {
+                        scrollProxy = proxy
+                    }
+                    .onChange(of: messageStore?.messages.count) { _, _ in
+                        scrollToBottom()
+                    }
                 }
-                #if os(iOS)
-                .scrollDismissesKeyboard(.interactively)
-                #endif
-                .onAppear {
-                    scrollProxy = proxy
-                }
-                .onChange(of: messageStore?.messages.count) { _, _ in
-                    scrollToBottom()
-                }
+
+                // Glass Input area
+                MessageInputView(onSend: { text, drawingData in
+                    messageStore?.sendMessage(text: text, drawingData: drawingData)
+                })
+                .background(.ultraThinMaterial)
             }
-
-            Divider()
-
-            // Input area
-            MessageInputView(onSend: { text, drawingData in
-                messageStore?.sendMessage(text: text, drawingData: drawingData)
-            })
         }
         .onAppear {
             setupMessageStore()
@@ -65,23 +78,42 @@ struct ChatRoomView: View {
         #endif
     }
 
+    private var roomColor: Color {
+        switch room.color {
+        case .blue: return Color(red: 0.2, green: 0.5, blue: 1.0)
+        case .green: return Color(red: 0.2, green: 0.8, blue: 0.4)
+        case .orange: return Color(red: 1.0, green: 0.6, blue: 0.2)
+        case .purple: return Color(red: 0.6, green: 0.3, blue: 0.9)
+        case .red: return Color(red: 1.0, green: 0.3, blue: 0.3)
+        case .teal: return Color(red: 0.2, green: 0.7, blue: 0.8)
+        case .pink: return Color(red: 1.0, green: 0.4, blue: 0.6)
+        case .yellow: return Color(red: 1.0, green: 0.8, blue: 0.2)
+        }
+    }
+
     private var chatHeader: some View {
         HStack {
             Button(action: onBack) {
-                HStack(spacing: 4) {
+                HStack(spacing: 6) {
                     Image(systemName: "chevron.left")
+                        .fontWeight(.semibold)
                     Text("Rooms")
                 }
+                .foregroundStyle(.tint)
             }
             .buttonStyle(.plain)
-            .foregroundStyle(.blue)
 
             Spacer()
 
-            VStack(spacing: 2) {
-                Text("Room \(room.rawValue)")
-                    .font(.headline)
-                HStack(spacing: 4) {
+            VStack(spacing: 3) {
+                HStack(spacing: 6) {
+                    Text(room.rawValue)
+                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                    Text("Room")
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+                }
+                HStack(spacing: 5) {
                     Circle()
                         .fill(connectionColor)
                         .frame(width: 8, height: 8)
@@ -95,17 +127,21 @@ struct ChatRoomView: View {
 
             // Peer count - tappable to show user list
             Button(action: { showingUserList = true }) {
-                HStack(spacing: 4) {
-                    Image(systemName: "person.2")
+                HStack(spacing: 5) {
+                    Image(systemName: "person.2.fill")
                     Text("\(multipeerService.connectedPeers.count)")
+                        .fontWeight(.medium)
                 }
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(.ultraThinMaterial, in: Capsule())
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
     }
 
     private var connectionColor: Color {

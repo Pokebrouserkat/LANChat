@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		48454A832F039C74006C2AD7 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 48454A822F039C74006C2AD7 /* AppIcon.icon */; };
 		A10000010000000000000001 /* LocalChatApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000001 /* LocalChatApp.swift */; };
 		A10000020000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000020000000000000002 /* ContentView.swift */; };
 		A10000030000000000000003 /* ChatRoom.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000030000000000000003 /* ChatRoom.swift */; };
@@ -25,6 +26,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		48454A822F039C74006C2AD7 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		A20000010000000000000001 /* LocalChatApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalChatApp.swift; sourceTree = "<group>"; };
 		A20000020000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A20000030000000000000003 /* ChatRoom.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatRoom.swift; sourceTree = "<group>"; };
@@ -59,6 +61,7 @@
 		A40000010000000000000001 = {
 			isa = PBXGroup;
 			children = (
+				48454A822F039C74006C2AD7 /* AppIcon.icon */,
 				A40000020000000000000002 /* Shared */,
 				A40000030000000000000003 /* macOS */,
 				A40000040000000000000004 /* Resources */,
@@ -196,6 +199,7 @@
 			files = (
 				A1000013000000000000000D /* Assets.xcassets in Resources */,
 				A1000015000000000000000F /* Settings.bundle in Resources */,
+				48454A832F039C74006C2AD7 /* AppIcon.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
