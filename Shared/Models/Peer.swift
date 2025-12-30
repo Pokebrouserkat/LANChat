@@ -7,16 +7,18 @@ struct Peer: Identifiable, Hashable, Sendable {
     let mcPeerID: MCPeerID
 
     init(mcPeerID: MCPeerID) {
-        self.id = mcPeerID.displayName
+        // Use mcPeerID's hash as unique identifier to distinguish peers with same display name
+        self.id = "\(mcPeerID.displayName)-\(mcPeerID.hash)"
         self.displayName = mcPeerID.displayName
         self.mcPeerID = mcPeerID
     }
 
     static func == (lhs: Peer, rhs: Peer) -> Bool {
-        lhs.id == rhs.id
+        // Compare using mcPeerID directly for accurate equality
+        lhs.mcPeerID == rhs.mcPeerID
     }
 
     func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
+        hasher.combine(mcPeerID)
     }
 }

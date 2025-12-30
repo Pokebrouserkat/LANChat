@@ -34,6 +34,9 @@ final class MultipeerService: NSObject, @unchecked Sendable {
     private let sessionLock = NSLock()
     private nonisolated(unsafe) var _threadSafeSession: MCSession?
 
+    // Timer for periodic state sync
+    private var syncTimer: Timer?
+
     private nonisolated func getThreadSafeSession() -> MCSession? {
         sessionLock.lock()
         defer { sessionLock.unlock() }
@@ -61,7 +64,7 @@ final class MultipeerService: NSObject, @unchecked Sendable {
         leaveCurrentRoom()
         currentRoom = room
 
-        // Create session
+        // Create session first before advertising
         let newSession = MCSession(peer: peerID, securityIdentity: nil, encryptionPreference: .required)
         newSession.delegate = self
         session = newSession
@@ -72,6 +75,9 @@ final class MultipeerService: NSObject, @unchecked Sendable {
         advertiser = MCNearbyServiceAdvertiser(peer: peerID, discoveryInfo: discoveryInfo, serviceType: serviceType)
         advertiser?.delegate = self
         advertiser?.startAdvertisingPeer()
+
+        // Start periodic sync timer
+        startSyncTimer()
 
         // Connect to existing peers in this room
         let peersInRoom = discoveredPeers[room] ?? []
@@ -84,6 +90,7 @@ final class MultipeerService: NSObject, @unchecked Sendable {
     }
 
     func leaveCurrentRoom() {
+        stopSyncTimer()
         advertiser?.stopAdvertisingPeer()
         advertiser = nil
         session?.disconnect()
@@ -104,10 +111,69 @@ final class MultipeerService: NSObject, @unchecked Sendable {
     }
 
     func getPeerCount(for room: ChatRoom) -> Int {
-        discoveredPeers[room]?.count ?? 0
+        // For the current room, use connected peers count for accuracy
+        if room == currentRoom {
+            return connectedPeers.count
+        }
+        // For other rooms, use discovered peers
+        return discoveredPeers[room]?.count ?? 0
     }
 
     // MARK: - Private Methods
+
+    /// Synchronizes our connectedPeers array with the actual MCSession state
+    private func syncSessionState() {
+        guard let session = session else {
+            if !connectedPeers.isEmpty {
+                connectedPeers = []
+                if currentRoom != nil {
+                    connectionState = .waiting
+                }
+            }
+            return
+        }
+
+        let actualPeerIDs = Set(session.connectedPeers)
+        let ourPeerIDs = Set(connectedPeers.map { $0.mcPeerID })
+
+        // Remove peers that are no longer in session
+        let removedPeerIDs = ourPeerIDs.subtracting(actualPeerIDs)
+        if !removedPeerIDs.isEmpty {
+            connectedPeers.removeAll { removedPeerIDs.contains($0.mcPeerID) }
+        }
+
+        // Add peers that are in session but not in our list
+        let addedPeerIDs = actualPeerIDs.subtracting(ourPeerIDs)
+        for peerID in addedPeerIDs {
+            let peer = Peer(mcPeerID: peerID)
+            if !connectedPeers.contains(peer) {
+                connectedPeers.append(peer)
+            }
+        }
+
+        // Update connection state based on actual state
+        if currentRoom != nil {
+            if connectedPeers.isEmpty {
+                connectionState = .waiting
+            } else {
+                connectionState = .connected
+            }
+        }
+    }
+
+    private func startSyncTimer() {
+        syncTimer?.invalidate()
+        syncTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.syncSessionState()
+            }
+        }
+    }
+
+    private func stopSyncTimer() {
+        syncTimer?.invalidate()
+        syncTimer = nil
+    }
 
     private func startBrowsing() {
         browser = MCNearbyServiceBrowser(peer: peerID, serviceType: serviceType)
@@ -207,24 +273,38 @@ extension MultipeerService: MCNearbyServiceBrowserDelegate {
                 self.discoveredPeers[room] = []
             }
 
-            if !self.discoveredPeers[room]!.contains(peer) {
+            // Update or add peer to discovered list
+            if let existingIndex = self.discoveredPeers[room]!.firstIndex(where: { $0.mcPeerID == peerID }) {
+                self.discoveredPeers[room]![existingIndex] = peer
+            } else {
                 self.discoveredPeers[room]!.append(peer)
             }
 
-            // If this is our current room, invite the peer
+            // If this is our current room, invite the peer (even if already in our list - they may have reconnected)
             if room == self.currentRoom, let session = self.session {
-                if self.connectionState == .waiting {
-                    self.connectionState = .connecting
+                // Only invite if not already connected
+                let alreadyConnected = session.connectedPeers.contains { $0 == peerID }
+                if !alreadyConnected {
+                    if self.connectionState == .waiting {
+                        self.connectionState = .connecting
+                    }
+                    browser.invitePeer(peerID, to: session, withContext: nil, timeout: 30)
                 }
-                browser.invitePeer(peerID, to: session, withContext: nil, timeout: 30)
             }
         }
     }
 
     nonisolated func browser(_ browser: MCNearbyServiceBrowser, lostPeer peerID: MCPeerID) {
         Task { @MainActor in
+            // Remove from all discovered peers lists
             for room in ChatRoom.allCases {
                 self.discoveredPeers[room]?.removeAll { $0.mcPeerID == peerID }
+            }
+            // Also remove from connected peers if present
+            self.connectedPeers.removeAll { $0.mcPeerID == peerID }
+            // Update connection state if we lost all peers
+            if self.connectedPeers.isEmpty && self.currentRoom != nil {
+                self.connectionState = .waiting
             }
         }
     }
