@@ -59,19 +59,32 @@ struct RoomSelectionView: View {
                 .background(.ultraThinMaterial)
 
                 // Room Grid
-                ScrollView {
-                    LazyVGrid(columns: columns, spacing: 16) {
-                        ForEach(ChatRoom.allCases) { room in
-                            RoomButton(
-                                room: room,
-                                peerCount: multipeerService.getPeerCount(for: room),
-                                action: { onRoomSelected(room) }
-                            )
+                GeometryReader { geometry in
+                    let rowCount = 4 // 8 rooms / 2 columns
+                    let spacing: CGFloat = 16
+                    let verticalPadding: CGFloat = 100 // top + bottom padding
+                    let totalSpacing = spacing * CGFloat(rowCount - 1)
+                    let availableHeight = geometry.size.height - verticalPadding - totalSpacing
+                    let calculatedHeight = availableHeight / CGFloat(rowCount)
+                    let minHeight: CGFloat = 110
+                    let buttonHeight = max(minHeight, calculatedHeight)
+                    let needsScroll = calculatedHeight < minHeight
+
+                    ScrollView(needsScroll ? .vertical : []) {
+                        LazyVGrid(columns: columns, spacing: spacing) {
+                            ForEach(ChatRoom.allCases) { room in
+                                RoomButton(
+                                    room: room,
+                                    peerCount: multipeerService.getPeerCount(for: room),
+                                    buttonHeight: buttonHeight,
+                                    action: { onRoomSelected(room) }
+                                )
+                            }
                         }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 20)
+                        .padding(.bottom, 80)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
-                    .padding(.bottom, 80)
                 }
 
                 // Glass Footer
@@ -102,6 +115,7 @@ struct RoomSelectionView: View {
 struct RoomButton: View {
     let room: ChatRoom
     let peerCount: Int
+    let buttonHeight: CGFloat
     let action: () -> Void
 
     @State private var isPressed = false
@@ -110,7 +124,7 @@ struct RoomButton: View {
         Button(action: action) {
             VStack(spacing: 10) {
                 Text(room.rawValue)
-                    .font(.system(size: 40, weight: .bold, design: .rounded))
+                    .font(.system(size: min(40, buttonHeight * 0.36), weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                     .shadow(color: .black.opacity(0.2), radius: 2, y: 1)
 
@@ -132,7 +146,7 @@ struct RoomButton: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 110)
+            .frame(height: buttonHeight)
             .background {
                 ZStack {
                     // Main gradient
