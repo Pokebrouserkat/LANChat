@@ -1,8 +1,14 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 struct MessageBubbleView: View {
     let message: Message
     var roomColor: Color = .blue
+    var onDelete: (() -> Void)?
 
     var body: some View {
         HStack {
@@ -90,6 +96,30 @@ struct MessageBubbleView: View {
                 Spacer(minLength: 50)
             }
         }
+        .contextMenu {
+            if let text = message.text, !text.isEmpty {
+                Button {
+                    copyToClipboard(text)
+                } label: {
+                    Label("Copy", systemImage: "doc.on.doc")
+                }
+            }
+
+            Button(role: .destructive) {
+                onDelete?()
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
+    }
+
+    private func copyToClipboard(_ text: String) {
+        #if canImport(UIKit)
+        UIPasteboard.general.string = text
+        #elseif canImport(AppKit)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        #endif
     }
 }
 

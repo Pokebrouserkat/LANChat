@@ -103,4 +103,54 @@ final class MessageStore {
             print("Failed to save received message: \(error)")
         }
     }
+
+    // MARK: - Delete Methods
+
+    func deleteMessage(_ message: Message) {
+        modelContext.delete(message)
+        messages.removeAll { $0.id == message.id }
+
+        do {
+            try modelContext.save()
+        } catch {
+            print("Failed to delete message: \(error)")
+        }
+    }
+
+    func deleteAllMessages(for room: ChatRoom) {
+        let roomID = room.rawValue
+        let descriptor = FetchDescriptor<Message>(
+            predicate: #Predicate { $0.roomID == roomID }
+        )
+
+        do {
+            let roomMessages = try modelContext.fetch(descriptor)
+            for message in roomMessages {
+                modelContext.delete(message)
+            }
+            try modelContext.save()
+
+            // If we're currently viewing this room, clear the messages array
+            if currentRoom == room {
+                messages = []
+            }
+        } catch {
+            print("Failed to delete messages for room \(room.rawValue): \(error)")
+        }
+    }
+
+    func deleteAllMessages() {
+        let descriptor = FetchDescriptor<Message>()
+
+        do {
+            let allMessages = try modelContext.fetch(descriptor)
+            for message in allMessages {
+                modelContext.delete(message)
+            }
+            try modelContext.save()
+            messages = []
+        } catch {
+            print("Failed to delete all messages: \(error)")
+        }
+    }
 }

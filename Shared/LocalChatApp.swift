@@ -6,6 +6,7 @@ struct LocalChatApp: App {
     let modelContainer: ModelContainer
 
     @State private var multipeerService = MultipeerService()
+    @Environment(\.scenePhase) private var scenePhase
 
     init() {
         do {
@@ -19,12 +20,72 @@ struct LocalChatApp: App {
         WindowGroup {
             ContentView()
                 .environment(multipeerService)
+                .onChange(of: scenePhase) { _, newPhase in
+                    if newPhase == .active {
+                        processDeleteSettings()
+                    }
+                }
         }
         .modelContainer(modelContainer)
         #if os(macOS)
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 400, height: 600)
         #endif
+    }
+
+    @MainActor
+    private func processDeleteSettings() {
+        let defaults = UserDefaults.standard
+
+        // Check if delete all is requested
+        if defaults.bool(forKey: "LocalChat.deleteAllMessages") {
+            deleteAllMessages()
+            defaults.set(false, forKey: "LocalChat.deleteAllMessages")
+        }
+
+        // Check individual room deletions
+        for room in ChatRoom.allCases {
+            let key = "LocalChat.deleteRoom.\(room.rawValue)"
+            if defaults.bool(forKey: key) {
+                deleteMessages(for: room)
+                defaults.set(false, forKey: key)
+            }
+        }
+    }
+
+    @MainActor
+    private func deleteAllMessages() {
+        let context = modelContainer.mainContext
+        let descriptor = FetchDescriptor<Message>()
+
+        do {
+            let messages = try context.fetch(descriptor)
+            for message in messages {
+                context.delete(message)
+            }
+            try context.save()
+        } catch {
+            print("Failed to delete all messages: \(error)")
+        }
+    }
+
+    @MainActor
+    private func deleteMessages(for room: ChatRoom) {
+        let context = modelContainer.mainContext
+        let roomID = room.rawValue
+        let descriptor = FetchDescriptor<Message>(
+            predicate: #Predicate { $0.roomID == roomID }
+        )
+
+        do {
+            let messages = try context.fetch(descriptor)
+            for message in messages {
+                context.delete(message)
+            }
+            try context.save()
+        } catch {
+            print("Failed to delete messages for room \(room.rawValue): \(error)")
+        }
     }
 }
 

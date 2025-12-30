@@ -10,6 +10,8 @@ struct ChatRoomView: View {
     @State private var messageStore: MessageStore?
     @State private var scrollProxy: ScrollViewProxy?
     @State private var showingUserList = false
+    @State private var messageToDelete: Message?
+    @State private var showingDeleteConfirmation = false
 
     var body: some View {
         ZStack {
@@ -36,8 +38,15 @@ struct ChatRoomView: View {
                         LazyVStack(spacing: 12) {
                             if let store = messageStore {
                                 ForEach(store.messages) { message in
-                                    MessageBubbleView(message: message, roomColor: roomColor)
-                                        .id(message.id)
+                                    MessageBubbleView(
+                                        message: message,
+                                        roomColor: roomColor,
+                                        onDelete: {
+                                            messageToDelete = message
+                                            showingDeleteConfirmation = true
+                                        }
+                                    )
+                                    .id(message.id)
                                 }
                             }
                         }
@@ -70,6 +79,23 @@ struct ChatRoomView: View {
         }
         .sheet(isPresented: $showingUserList) {
             UserListView(peers: multipeerService.connectedPeers)
+        }
+        .confirmationDialog(
+            "Delete Message",
+            isPresented: $showingDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) {
+                if let message = messageToDelete {
+                    messageStore?.deleteMessage(message)
+                }
+                messageToDelete = nil
+            }
+            Button("Cancel", role: .cancel) {
+                messageToDelete = nil
+            }
+        } message: {
+            Text("This message will only be deleted for you. Anyone else who saw it will still have it.")
         }
         #if os(macOS)
         .frame(minWidth: 350, minHeight: 500)

@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 struct RoomSelectionView: View {
     @Environment(MultipeerService.self) private var multipeerService
@@ -25,13 +28,30 @@ struct RoomSelectionView: View {
 
             VStack(spacing: 0) {
                 // Glass Header
-                VStack(spacing: 8) {
-                    Text("LocalChat")
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
-                        .foregroundStyle(.primary)
-                    Text("Select a Room")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                ZStack {
+                    VStack(spacing: 8) {
+                        Text("LocalChat")
+                            .font(.system(size: 32, weight: .bold, design: .rounded))
+                            .foregroundStyle(.primary)
+                        Text("Select a Room")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    HStack {
+                        Spacer()
+                        Button {
+                            openSettings()
+                        } label: {
+                            Image(systemName: "gearshape.fill")
+                                .font(.title3)
+                                .foregroundStyle(.secondary)
+                                .padding(10)
+                                .background(.ultraThinMaterial, in: Circle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.trailing, 16)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.top, 24)
@@ -67,6 +87,14 @@ struct RoomSelectionView: View {
         .frame(minWidth: 300, minHeight: 400)
         #else
         .navigationBarHidden(true)
+        #endif
+    }
+
+    private func openSettings() {
+        #if canImport(UIKit)
+        if let url = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(url)
+        }
         #endif
     }
 }
