@@ -44,6 +44,8 @@ struct RoomSelectionView: View {
         }
         #if os(macOS)
         .frame(minWidth: 300, minHeight: 400)
+        #else
+        .navigationBarHidden(true)
         #endif
     }
 }

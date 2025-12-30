@@ -30,6 +30,9 @@ struct ChatRoomView: View {
                     }
                     .padding()
                 }
+                #if os(iOS)
+                .scrollDismissesKeyboard(.interactively)
+                #endif
                 .onAppear {
                     scrollProxy = proxy
                 }
@@ -53,6 +56,8 @@ struct ChatRoomView: View {
         }
         #if os(macOS)
         .frame(minWidth: 350, minHeight: 500)
+        #else
+        .navigationBarHidden(true)
         #endif
     }
 
