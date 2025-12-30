@@ -25,15 +25,39 @@ final class UserProfile: @unchecked Sendable {
         }
 
         // Load or generate display name
-        if let storedName = UserDefaults.standard.string(forKey: Self.displayNameKey), !storedName.isEmpty {
-            self.displayName = storedName
+        self.displayName = Self.loadDisplayName()
+
+        // Observe app becoming active to reload settings from iOS Settings app
+        #if !os(macOS)
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.willEnterForegroundNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.reloadDisplayName()
+        }
+        #endif
+    }
+
+    private static func loadDisplayName() -> String {
+        if let storedName = UserDefaults.standard.string(forKey: displayNameKey), !storedName.isEmpty {
+            return storedName
         } else {
             #if os(macOS)
-            self.displayName = NSFullUserName().isEmpty ? "User" : NSFullUserName()
+            let name = NSFullUserName().isEmpty ? "User" : NSFullUserName()
             #else
-            self.displayName = UIDevice.current.name
+            let name = UIDevice.current.name
             #endif
-            UserDefaults.standard.set(self.displayName, forKey: Self.displayNameKey)
+            UserDefaults.standard.set(name, forKey: displayNameKey)
+            return name
+        }
+    }
+
+    private func reloadDisplayName() {
+        if let storedName = UserDefaults.standard.string(forKey: Self.displayNameKey), !storedName.isEmpty {
+            if displayName != storedName {
+                displayName = storedName
+            }
         }
     }
 }

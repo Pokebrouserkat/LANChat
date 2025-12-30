@@ -21,6 +21,7 @@
 		A1000012000000000000000C /* MessageInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000012000000000000000C /* MessageInputView.swift */; };
 		A1000013000000000000000D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2000013000000000000000D /* Assets.xcassets */; };
 		A1000014000000000000000E /* UserListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000017000000000000000E /* UserListView.swift */; };
+		A1000015000000000000000F /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = A2000018000000000000000F /* Settings.bundle */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -41,6 +42,7 @@
 		A2000015000000000000000F /* LocalChat.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = LocalChat.entitlements; sourceTree = "<group>"; };
 		A20000160000000000000010 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A2000017000000000000000E /* UserListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserListView.swift; sourceTree = "<group>"; };
+		A2000018000000000000000F /* Settings.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = Settings.bundle; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -88,6 +90,7 @@
 			isa = PBXGroup;
 			children = (
 				A2000013000000000000000D /* Assets.xcassets */,
+				A2000018000000000000000F /* Settings.bundle */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -192,6 +195,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A1000013000000000000000D /* Assets.xcassets in Resources */,
+				A1000015000000000000000F /* Settings.bundle in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -368,6 +372,7 @@
 				SDKROOT = macosx;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = YES;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 6.0;
@@ -406,6 +411,7 @@
 				SDKROOT = macosx;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = YES;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 6.0;
