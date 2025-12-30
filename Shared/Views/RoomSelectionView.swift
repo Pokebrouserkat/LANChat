@@ -23,18 +23,18 @@ struct RoomSelectionView: View {
             .padding(.bottom, 24)
 
             // Room Grid
-            LazyVGrid(columns: columns, spacing: 16) {
-                ForEach(ChatRoom.allCases) { room in
-                    RoomButton(
-                        room: room,
-                        peerCount: multipeerService.getPeerCount(for: room),
-                        action: { onRoomSelected(room) }
-                    )
+            ScrollView {
+                LazyVGrid(columns: columns, spacing: 16) {
+                    ForEach(ChatRoom.allCases) { room in
+                        RoomButton(
+                            room: room,
+                            peerCount: multipeerService.getPeerCount(for: room),
+                            action: { onRoomSelected(room) }
+                        )
+                    }
                 }
+                .padding(.horizontal, 20)
             }
-            .padding(.horizontal, 20)
-
-            Spacer()
 
             // Footer
             Text("Nearby users will appear automatically")
