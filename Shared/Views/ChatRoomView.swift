@@ -80,18 +80,14 @@ struct ChatRoomView: View {
         .sheet(isPresented: $showingUserList) {
             UserListView(peers: multipeerService.connectedPeers)
         }
-        .confirmationDialog(
-            "Delete Message",
-            isPresented: $showingDeleteConfirmation,
-            titleVisibility: .visible
-        ) {
+        .alert("Delete Message", isPresented: $showingDeleteConfirmation) {
+            Button("Cancel", role: .cancel) {
+                messageToDelete = nil
+            }
             Button("Delete", role: .destructive) {
                 if let message = messageToDelete {
                     messageStore?.deleteMessage(message)
                 }
-                messageToDelete = nil
-            }
-            Button("Cancel", role: .cancel) {
                 messageToDelete = nil
             }
         } message: {
