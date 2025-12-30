@@ -28,16 +28,25 @@ struct MessageBubbleView: View {
 
                 // Message content
                 VStack(alignment: .leading, spacing: 8) {
-                    // Drawing placeholder (if any)
-                    if message.drawingData != nil {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(.ultraThinMaterial)
-                            .frame(height: 120)
-                            .overlay {
-                                Image(systemName: "scribble.variable")
-                                    .font(.title2)
-                                    .foregroundStyle(.secondary)
-                            }
+                    // Image attachment (if any)
+                    if let imageData = message.drawingData {
+                        #if canImport(UIKit)
+                        if let uiImage = UIImage(data: imageData) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(maxWidth: 240, maxHeight: 240)
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        }
+                        #elseif canImport(AppKit)
+                        if let nsImage = NSImage(data: imageData) {
+                            Image(nsImage: nsImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(maxWidth: 240, maxHeight: 240)
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        }
+                        #endif
                     }
 
                     // Text
@@ -99,9 +108,17 @@ struct MessageBubbleView: View {
         .contextMenu {
             if let text = message.text, !text.isEmpty {
                 Button {
-                    copyToClipboard(text)
+                    copyTextToClipboard(text)
                 } label: {
-                    Label("Copy", systemImage: "doc.on.doc")
+                    Label("Copy Text", systemImage: "doc.on.doc")
+                }
+            }
+
+            if let imageData = message.drawingData {
+                Button {
+                    copyImageToClipboard(imageData)
+                } label: {
+                    Label("Copy Image", systemImage: "photo.on.rectangle")
                 }
             }
 
@@ -113,12 +130,25 @@ struct MessageBubbleView: View {
         }
     }
 
-    private func copyToClipboard(_ text: String) {
+    private func copyTextToClipboard(_ text: String) {
         #if canImport(UIKit)
         UIPasteboard.general.string = text
         #elseif canImport(AppKit)
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
+        #endif
+    }
+
+    private func copyImageToClipboard(_ imageData: Data) {
+        #if canImport(UIKit)
+        if let image = UIImage(data: imageData) {
+            UIPasteboard.general.image = image
+        }
+        #elseif canImport(AppKit)
+        if let image = NSImage(data: imageData) {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.writeObjects([image])
+        }
         #endif
     }
 }
