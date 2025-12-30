@@ -149,13 +149,15 @@ struct MessageInputView: View {
         selectedImageData = nil
     }
 
-    private func createImage(from data: Data) -> PlatformImage? {
-        #if canImport(UIKit)
+    #if canImport(UIKit)
+    private func createImage(from data: Data) -> UIImage? {
         return UIImage(data: data)
-        #elseif canImport(AppKit)
-        return NSImage(data: data)
-        #endif
     }
+    #elseif canImport(AppKit)
+    private func createImage(from data: Data) -> NSImage? {
+        return NSImage(data: data)
+    }
+    #endif
 
     private func compressImage(_ data: Data) -> Data? {
         #if canImport(UIKit)
@@ -216,12 +218,6 @@ struct MessageInputView: View {
         #endif
     }
 }
-
-#if canImport(UIKit)
-private typealias PlatformImage = UIImage
-#elseif canImport(AppKit)
-private typealias PlatformImage = NSImage
-#endif
 
 #Preview {
     ZStack {
