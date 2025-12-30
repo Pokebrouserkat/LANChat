@@ -101,14 +101,6 @@ struct RoomSelectionView: View {
                         .padding(.bottom, 80)
                     }
                 }
-
-                // Glass Footer
-                Text("Nearby users will appear automatically")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(.ultraThinMaterial)
             }
         }
         #if os(macOS)

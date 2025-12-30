@@ -12,6 +12,7 @@ struct ChatRoomView: View {
     @State private var showingUserList = false
     @State private var messageToDelete: Message?
     @State private var showingDeleteConfirmation = false
+    @State private var userProfile = UserProfile()
 
     var body: some View {
         ZStack {
@@ -92,7 +93,7 @@ struct ChatRoomView: View {
             multipeerService.leaveCurrentRoom()
         }
         .sheet(isPresented: $showingUserList) {
-            UserListView(peers: multipeerService.connectedPeers)
+            UserListView(currentUserName: userProfile.displayName, peers: multipeerService.connectedPeers)
         }
         .alert("Delete Message", isPresented: $showingDeleteConfirmation) {
             Button("Cancel", role: .cancel) {
@@ -141,31 +142,21 @@ struct ChatRoomView: View {
 
             Spacer()
 
-            VStack(spacing: 3) {
-                HStack(spacing: 6) {
-                    Text(room.rawValue)
-                        .font(.system(size: 20, weight: .bold, design: .rounded))
-                    Text("Room")
-                        .font(.headline)
-                        .foregroundStyle(.secondary)
-                }
-                HStack(spacing: 5) {
-                    Circle()
-                        .fill(connectionColor)
-                        .frame(width: 8, height: 8)
-                    Text(connectionText)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+            HStack(spacing: 6) {
+                Text(room.rawValue)
+                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                Text("Room")
+                    .font(.headline)
+                    .foregroundStyle(.secondary)
             }
 
             Spacer()
 
-            // Peer count - tappable to show user list
+            // User count (including self) - tappable to show user list
             Button(action: { showingUserList = true }) {
                 HStack(spacing: 5) {
                     Image(systemName: "person.2.fill")
-                    Text("\(multipeerService.connectedPeers.count)")
+                    Text("\(multipeerService.connectedPeers.count + 1)")
                         .fontWeight(.medium)
                 }
                 .font(.subheadline)
@@ -180,26 +171,7 @@ struct ChatRoomView: View {
         .padding(.vertical, 14)
     }
 
-    private var connectionColor: Color {
-        switch multipeerService.connectionState {
-        case .connected: return .green
-        case .connecting: return .orange
-        case .waiting: return .blue
-        case .disconnected: return .red
-        }
-    }
-
-    private var connectionText: String {
-        switch multipeerService.connectionState {
-        case .connected: return "Connected"
-        case .connecting: return "Connecting..."
-        case .waiting: return "Waiting for others"
-        case .disconnected: return "Disconnected"
-        }
-    }
-
     private func setupMessageStore() {
-        let userProfile = UserProfile()
         messageStore = MessageStore(
             modelContext: modelContext,
             userProfile: userProfile,
