@@ -5,6 +5,7 @@ struct ContentView: View {
     @State private var selectedRoom: ChatRoom?
     @Binding var showSettings: Bool
     @Binding var pendingRoomToOpen: ChatRoom?
+    @Binding var shouldShowRoomSelection: Bool
 
     var body: some View {
         NavigationStack {
@@ -27,10 +28,16 @@ struct ContentView: View {
                 pendingRoomToOpen = nil
             }
         }
+        .onChange(of: shouldShowRoomSelection) { _, shouldShow in
+            if shouldShow {
+                selectedRoom = nil
+                shouldShowRoomSelection = false
+            }
+        }
     }
 }
 
 #Preview {
-    ContentView(showSettings: .constant(false), pendingRoomToOpen: .constant(nil))
+    ContentView(showSettings: .constant(false), pendingRoomToOpen: .constant(nil), shouldShowRoomSelection: .constant(false))
         .environment(MultipeerService())
 }

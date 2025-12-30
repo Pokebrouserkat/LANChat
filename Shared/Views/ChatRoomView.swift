@@ -89,6 +89,9 @@ struct ChatRoomView: View {
         .onAppear {
             setupMessageStore()
         }
+        .onChange(of: room) { _, newRoom in
+            messageStore?.loadMessages(for: newRoom)
+        }
         .onDisappear {
             multipeerService.leaveCurrentRoom()
         }

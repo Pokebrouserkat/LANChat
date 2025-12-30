@@ -8,8 +8,10 @@ struct LocalChatApp: App {
     @State private var multipeerService = MultipeerService()
     @State private var pendingDeleteAction: DeleteAction?
     @State private var showDeleteConfirmation = false
+    @State private var showNoMessagesAlert = false
     @State private var showSettings = false
     @State private var pendingRoomToOpen: ChatRoom?
+    @State private var shouldShowRoomSelection = false
 
     enum DeleteAction {
         case all
@@ -26,7 +28,7 @@ struct LocalChatApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView(showSettings: $showSettings, pendingRoomToOpen: $pendingRoomToOpen)
+            ContentView(showSettings: $showSettings, pendingRoomToOpen: $pendingRoomToOpen, shouldShowRoomSelection: $shouldShowRoomSelection)
                 .environment(multipeerService)
                 .onOpenURL { url in
                     handleURL(url)
@@ -43,6 +45,13 @@ struct LocalChatApp: App {
                     }
                 } message: {
                     Text(deleteConfirmationMessage)
+                }
+                .alert("No Messages", isPresented: $showNoMessagesAlert) {
+                    Button("OK", role: .cancel) {
+                        openSettings()
+                    }
+                } message: {
+                    Text("There are no messages to delete.")
                 }
                 #if os(macOS)
                 .containerBackground(.clear, for: .window)
@@ -81,17 +90,32 @@ struct LocalChatApp: App {
 
         switch url.host {
         case "delete-all":
-            pendingDeleteAction = .all
-            showDeleteConfirmation = true
+            // Show room selection screen behind the confirmation
+            shouldShowRoomSelection = true
+            if hasAnyMessages() {
+                pendingDeleteAction = .all
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    showDeleteConfirmation = true
+                }
+            } else {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    showNoMessagesAlert = true
+                }
+            }
         case "delete-room":
             if let roomID = url.pathComponents.dropFirst().first,
                let room = ChatRoom(rawValue: roomID) {
                 // Navigate to the room first so user can see it behind the confirmation
                 pendingRoomToOpen = room
-                pendingDeleteAction = .room(room)
-                // Show confirmation after a brief delay to allow navigation
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    showDeleteConfirmation = true
+                if hasMessages(in: room) {
+                    pendingDeleteAction = .room(room)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        showDeleteConfirmation = true
+                    }
+                } else {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        showNoMessagesAlert = true
+                    }
                 }
             }
         default:
@@ -101,6 +125,23 @@ struct LocalChatApp: App {
                 pendingRoomToOpen = room
             }
         }
+    }
+
+    @MainActor
+    private func hasAnyMessages() -> Bool {
+        let context = modelContainer.mainContext
+        let descriptor = FetchDescriptor<Message>()
+        return (try? context.fetchCount(descriptor)) ?? 0 > 0
+    }
+
+    @MainActor
+    private func hasMessages(in room: ChatRoom) -> Bool {
+        let context = modelContainer.mainContext
+        let roomID = room.rawValue
+        let descriptor = FetchDescriptor<Message>(
+            predicate: #Predicate { $0.roomID == roomID }
+        )
+        return (try? context.fetchCount(descriptor)) ?? 0 > 0
     }
 
     @MainActor
@@ -132,6 +173,7 @@ struct LocalChatApp: App {
                 context.delete(message)
             }
             try context.save()
+            NotificationCenter.default.post(name: .messagesDeleted, object: nil)
         } catch {
             print("Failed to delete all messages: \(error)")
         }
@@ -151,6 +193,7 @@ struct LocalChatApp: App {
                 context.delete(message)
             }
             try context.save()
+            NotificationCenter.default.post(name: .messagesDeleted, object: room)
         } catch {
             print("Failed to delete messages for room \(room.rawValue): \(error)")
         }

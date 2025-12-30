@@ -2,6 +2,10 @@ import Foundation
 import SwiftData
 import SwiftUI
 
+extension Notification.Name {
+    static let messagesDeleted = Notification.Name("messagesDeleted")
+}
+
 @MainActor
 @Observable
 final class MessageStore {
@@ -21,6 +25,22 @@ final class MessageStore {
         multipeerService.onMessageReceived = { [weak self] payload in
             Task { @MainActor in
                 self?.handleReceivedMessage(payload)
+            }
+        }
+
+        // Listen for external message deletions
+        NotificationCenter.default.addObserver(
+            forName: .messagesDeleted,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            let deletedRoom = notification.object as? ChatRoom
+            Task { @MainActor in
+                guard let self = self, let currentRoom = self.currentRoom else { return }
+                // Reload if all messages deleted (nil) or this specific room
+                if deletedRoom == nil || deletedRoom == currentRoom {
+                    self.loadMessages(for: currentRoom)
+                }
             }
         }
     }
