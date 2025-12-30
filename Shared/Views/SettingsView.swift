@@ -7,6 +7,7 @@ struct SettingsView: View {
 
     @AppStorage("LocalChat.displayName") private var displayName = ""
     @State private var deleteConfirmation: DeleteConfirmation?
+    @State private var messageCounts: [String: Int] = [:]
 
     private let columns = [
         GridItem(.flexible()),
@@ -19,7 +20,7 @@ struct SettingsView: View {
 
         var title: String {
             if let room = room {
-                return "Delete Room \(room.rawValue)?"
+                return "Erase Room \(room.rawValue)?"
             }
             return "Delete All Messages?"
         }
@@ -67,41 +68,46 @@ struct SettingsView: View {
                             .textFieldStyle(.roundedBorder)
                     }
 
-                    Divider()
+                    if roomsWithMessages > 0 {
+                        Divider()
 
-                    // Delete by Room section
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Delete Messages")
-                            .font(.headline)
-                            .foregroundStyle(.secondary)
+                        // Delete by Room section
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Delete Messages")
+                                .font(.headline)
+                                .foregroundStyle(.secondary)
 
-                        LazyVGrid(columns: columns, spacing: 12) {
-                            ForEach(ChatRoom.allCases) { room in
-                                DeleteRoomButton(room: room) {
-                                    deleteConfirmation = DeleteConfirmation(room: room)
+                            LazyVGrid(columns: columns, spacing: 12) {
+                                ForEach(ChatRoom.allCases) { room in
+                                    let count = messageCounts[room.rawValue] ?? 0
+                                    DeleteRoomButton(room: room, isEmpty: count == 0) {
+                                        deleteConfirmation = DeleteConfirmation(room: room)
+                                    }
                                 }
                             }
-                        }
 
-                        Button {
-                            deleteConfirmation = DeleteConfirmation(room: nil)
-                        } label: {
-                            HStack {
-                                Image(systemName: "trash.fill")
-                                Text("Delete All Messages")
-                                    .fontWeight(.semibold)
+                            if roomsWithMessages > 1 {
+                                Button {
+                                    deleteConfirmation = DeleteConfirmation(room: nil)
+                                } label: {
+                                    HStack {
+                                        Image(systemName: "trash.fill")
+                                        Text("Delete All Messages")
+                                            .fontWeight(.semibold)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 14)
+                                    .background(.secondary.opacity(0.15))
+                                    .foregroundStyle(.primary)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(.secondary.opacity(0.15))
-                            .foregroundStyle(.primary)
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        }
-                        .buttonStyle(.plain)
 
-                        Text("Messages are only deleted from your device.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            Text("Messages are only deleted from your device.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
                 .padding(24)
@@ -119,10 +125,30 @@ struct SettingsView: View {
                     } else {
                         deleteAllMessages()
                     }
+                    refreshMessageCounts()
                 },
                 secondaryButton: .cancel()
             )
         }
+        .onAppear {
+            refreshMessageCounts()
+        }
+    }
+
+    private var roomsWithMessages: Int {
+        messageCounts.values.filter { $0 > 0 }.count
+    }
+
+    private func refreshMessageCounts() {
+        var counts: [String: Int] = [:]
+        for room in ChatRoom.allCases {
+            let roomID = room.rawValue
+            let descriptor = FetchDescriptor<Message>(
+                predicate: #Predicate { $0.roomID == roomID }
+            )
+            counts[roomID] = (try? modelContext.fetchCount(descriptor)) ?? 0
+        }
+        messageCounts = counts
     }
 
     private func deleteMessages(for room: ChatRoom) {
@@ -159,9 +185,8 @@ struct SettingsView: View {
 
 struct DeleteRoomButton: View {
     let room: ChatRoom
+    let isEmpty: Bool
     let action: () -> Void
-
-    @State private var isHovered = false
 
     var body: some View {
         Button(action: action) {
@@ -170,9 +195,11 @@ struct DeleteRoomButton: View {
                     .font(.system(size: 20, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
 
-                Image(systemName: "trash")
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.8))
+                if !isEmpty {
+                    Image(systemName: "trash")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.8))
+                }
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
@@ -190,17 +217,15 @@ struct DeleteRoomButton: View {
                     )
                     .overlay {
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(.white.opacity(isHovered ? 0.2 : 0.1))
+                            .fill(.white.opacity(0.1))
                     }
             }
+            .saturation(isEmpty ? 0.3 : 1.0)
+            .opacity(isEmpty ? 0.5 : 1.0)
             .shadow(color: .black.opacity(0.1), radius: 4, y: 2)
-            .scaleEffect(isHovered ? 1.02 : 1.0)
-            .animation(.easeInOut(duration: 0.15), value: isHovered)
         }
         .buttonStyle(.plain)
-        .onHover { hovering in
-            isHovered = hovering
-        }
+        .disabled(isEmpty)
     }
 
     private func roomColor(_ color: RoomColor) -> Color {
