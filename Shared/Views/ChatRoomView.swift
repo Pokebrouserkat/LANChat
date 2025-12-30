@@ -9,6 +9,7 @@ struct ChatRoomView: View {
 
     @State private var messageStore: MessageStore?
     @State private var scrollProxy: ScrollViewProxy?
+    @State private var showingUserList = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -54,6 +55,9 @@ struct ChatRoomView: View {
         .onDisappear {
             multipeerService.leaveCurrentRoom()
         }
+        .sheet(isPresented: $showingUserList) {
+            UserListView(peers: multipeerService.connectedPeers)
+        }
         #if os(macOS)
         .frame(minWidth: 350, minHeight: 500)
         #else
@@ -89,13 +93,16 @@ struct ChatRoomView: View {
 
             Spacer()
 
-            // Peer count
-            HStack(spacing: 4) {
-                Image(systemName: "person.2")
-                Text("\(multipeerService.connectedPeers.count)")
+            // Peer count - tappable to show user list
+            Button(action: { showingUserList = true }) {
+                HStack(spacing: 4) {
+                    Image(systemName: "person.2")
+                    Text("\(multipeerService.connectedPeers.count)")
+                }
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
             }
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
+            .buttonStyle(.plain)
         }
         .padding(.horizontal)
         .padding(.vertical, 12)
